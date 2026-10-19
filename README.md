@@ -13,7 +13,7 @@ JuliaQCD の動画チュートリアルのためのノートブックです。Go
 
 Contents:
 
-1. Installing LatticeQCD.jl and Plots.jl
+1. Installing LatticeQCD.jl and PlotlyLight.jl (lightweight, interactive plots)
 2. HMC with two flavors of Wilson fermions on a 4⁴ lattice, using the v2 workflow (`load_simulation_spec` → `build_simulation` → `run!`), and plotting the plaquette history
 3. A quenched (heat bath) run on a 4³×16 lattice, measuring the pion correlator, the effective mass, and jackknife errors
 
