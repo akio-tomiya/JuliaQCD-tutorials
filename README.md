@@ -19,7 +19,7 @@ Contents:
 
 ## How to run
 
-- **Google Colab**: open a notebook with the badge above, then choose **Julia** under *Runtime → Change runtime type*. The first cell installs the packages (a few minutes).
+- **Google Colab**: open a notebook with the badge above. The runtime is set to **Julia** automatically (if not, choose Julia under *Runtime → Change runtime type*). The first cell installs the packages (a few minutes).
 - **Jupyter**: install [IJulia](https://github.com/JuliaLang/IJulia.jl) and open the notebook with a Julia 1.11 or 1.12 kernel.
 
 Tested with LatticeQCD.jl 2.0.3 on Julia 1.11 (one CPU thread, Apple M-series). There, section 2 took about 1.5 minutes and section 3 about 2.5 minutes, excluding package installation. A Colab CPU may be slower.
