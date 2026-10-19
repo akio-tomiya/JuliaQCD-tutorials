@@ -3,6 +3,8 @@
 # The notebooks run this in their first cell on Colab:
 #   include(download("https://raw.githubusercontent.com/akio-tomiya/JuliaQCD-tutorials/main/tools/colab_setup.jl"))
 #
+# After unpacking the cache, the kernel is restarted once (exit(); Colab starts a new kernel and shows
+# "Your session crashed"), so that it loads the precompiled IJulia, Preferences, ... from the cache.
 # The cache (built by tools/build_colab_cache.jl on Colab itself) is used only when Colab's default
 # environment is exactly the one the cache was built on; this is checked with the SHA-256 of Colab's
 # Manifest.toml and the Julia version. Otherwise the packages are installed normally: the packages the
@@ -21,7 +23,10 @@ let
     manifest = joinpath(envdir, "Manifest.toml")
     key = isfile(manifest) ? bytes2hex(sha256(read(manifest))) : ""
     used_cache = false
-    if key == CACHE_KEY && VERSION == CACHE_JULIA
+    if haskey(Pkg.project().dependencies, "LatticeQCD")
+        println("LatticeQCD is already installed.")
+        used_cache = true
+    elseif key == CACHE_KEY && VERSION == CACHE_JULIA
         try
             t = @elapsed begin
                 tarball = download(CACHE_URL)
@@ -32,7 +37,11 @@ let
                 rm(tarball)
             end
             println("Installed from the precompiled cache in ", round(Int, t), " s.")
-            used_cache = true
+            println("Restarting the kernel once. Continue with the next cell.")
+            println("カーネルを 1 回再起動します。次のセルから続けてください。")
+            flush(stdout)
+            sleep(1)
+            exit()
         catch err
             println("The precompiled cache could not be used (", sprint(showerror, err), "); installing normally.")
         end

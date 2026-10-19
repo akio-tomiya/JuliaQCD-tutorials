@@ -3,9 +3,12 @@
 # Run this in a fresh Colab Julia runtime:
 #   include(download("https://raw.githubusercontent.com/akio-tomiya/JuliaQCD-tutorials/main/tools/build_colab_cache.jl"))
 #
-# Colab's IJulia loads some packages (Preferences, JLLWrappers, ...) from Colab's own depot at startup,
-# and precompiled files are checked against the exact builds of their dependencies. A cache built
-# anywhere else is therefore rejected on Colab, so the cache must be built on Colab itself.
+# Colab's IJulia loads some packages (Preferences, JLLWrappers, PrecompileTools, ZMQ, ...) at startup,
+# and precompiled files are checked against the exact builds of their dependencies. Colab's own
+# precompiled files of these packages do not match the CPU of the runtime, so every new runtime
+# precompiles them again at startup, with new build IDs. The cache therefore also contains the
+# precompiled files of every package the kernel has loaded, and tools/colab_setup.jl restarts the
+# kernel once after unpacking, so that the kernel loads exactly the builds the cache was made with.
 #
 # Many of Colab's own precompiled files (Plots, for example) are built for a different CPU than the
 # machine a runtime gets ("cache misses: target mismatch"), which is a large part of why Colab is slow.
@@ -50,7 +53,17 @@ t_using = @elapsed @eval using LatticeQCD, PlotlyLight
 println("Pkg.add: ", round(t_add), " s, using: ", round(t_using), " s")
 
 new = sort!(collect(union((setdiff(files_under(depot, s), before[s]) for s in subs)...)))
-println(length(new), " new files in the depot")
+# the precompiled files of every package loaded in this kernel, including those loaded at startup
+for id in keys(Base.loaded_modules)
+    origin = get(Base.pkgorigins, id, nothing)
+    (origin === nothing || origin.cachepath === nothing) && continue
+    startswith(origin.cachepath, depot) || continue
+    for f in (origin.cachepath, splitext(origin.cachepath)[1] * ".so")
+        isfile(f) && push!(new, relpath(f, depot))
+    end
+end
+unique!(sort!(new))
+println(length(new), " files to pack")
 
 stage = joinpath(depot, "lqcd_colab_env")
 mkpath(stage)
