@@ -13,7 +13,10 @@
 # back to a normal installation when Colab has changed.
 using Pkg, SHA
 
-const PKGS = ["LatticeQCD", "PlotlyLight"]
+# PlotlyLight needs EasyConfig, which allows only OrderedCollections 1.x, while Colab ships 2.x.
+# OrderedCollections is not loaded when the Colab kernel starts, so it is safe to let it go back to 1.x.
+const PKGS = [PackageSpec(name="LatticeQCD"), PackageSpec(name="PlotlyLight"),
+              PackageSpec(name="OrderedCollections", version="1")]
 depot = DEPOT_PATH[1]
 envdir = dirname(Base.active_project())
 manifest = joinpath(envdir, "Manifest.toml")
