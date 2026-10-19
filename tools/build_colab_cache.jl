@@ -7,12 +7,14 @@
 # and precompiled files are checked against the exact builds of their dependencies. A cache built
 # anywhere else is therefore rejected on Colab, so the cache must be built on Colab itself.
 #
-# Colab's own precompiled files are built for a different CPU than the machine a runtime gets
-# ("cache misses: target mismatch"), so the cache is built for the same set of CPU targets as the
-# official Julia binaries. The packages that the kernel has already loaded at startup (IJulia,
-# Preferences, JLLWrappers, ...) are pinned so that their versions do not change; other versions may
-# move. Only what is loaded gets precompiled, and the files that were added to the depot are packed
-# together with the resulting environment.
+# Many of Colab's own precompiled files (Plots, for example) are built for a different CPU than the
+# machine a runtime gets ("cache misses: target mismatch"), which is a large part of why Colab is slow.
+# The cache is built for the CPU of the runtime (native). It cannot be built for generic CPU targets:
+# the packages that the kernel loads at startup (PrecompileTools, Preferences, ...) are precompiled for
+# one CPU only, and a generic build of their dependents is then skipped. The packages that the kernel
+# has already loaded are pinned so that their versions do not change; other versions may move. Only
+# what is loaded gets precompiled, and the files that were added to the depot are packed together with
+# the resulting environment.
 # The notebooks check `key` (the SHA-256 of Colab's default Manifest.toml before installing) and fall
 # back to a normal installation when Colab has changed.
 using Pkg, SHA
@@ -38,7 +40,6 @@ subs = ["packages", "artifacts", compiled]
 before = Dict(s => files_under(depot, s) for s in subs)
 
 ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
-ENV["JULIA_CPU_TARGET"] = "generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1);x86-64-v4,-rdrnd,base(1)"
 loaded = Set(Base.PkgId(m) for m in values(Base.loaded_modules))
 pins = [PackageSpec(name=info.name, uuid=uuid) for (uuid, info) in Pkg.dependencies()
         if info.is_tracking_registry && !info.is_pinned && Base.PkgId(uuid, info.name) in loaded]
@@ -56,7 +57,7 @@ mkpath(stage)
 cp(joinpath(envdir, "Project.toml"), joinpath(stage, "Project.toml"); force=true)
 cp(manifest, joinpath(stage, "Manifest.toml"); force=true)
 write(joinpath(stage, "key.txt"), key * "\n")
-write(joinpath(stage, "julia_version.txt"), string(VERSION, "\n", Sys.cpu_info()[1].model, "\n"))
+write(joinpath(stage, "julia_version.txt"), string(VERSION, "\n", Sys.CPU_NAME, "\n", Sys.cpu_info()[1].model, "\n"))
 push!(new, relpath(joinpath(stage, "Project.toml"), depot), relpath(joinpath(stage, "Manifest.toml"), depot),
       relpath(joinpath(stage, "key.txt"), depot), relpath(joinpath(stage, "julia_version.txt"), depot))
 
@@ -65,5 +66,5 @@ write(list, join(new, "\n") * "\n")
 tarball = "/content/lqcd_colab_cache.tar.gz"
 run(`tar -czf $tarball -C $depot -T $list`)
 println("key = ", key)
-println("julia = ", VERSION, ", cpu = ", Sys.cpu_info()[1].model)
+println("julia = ", VERSION, ", cpu = ", Sys.CPU_NAME, " (", Sys.cpu_info()[1].model, ")")
 println(tarball, ": ", round(filesize(tarball) / 2^20, digits=1), " MiB")
